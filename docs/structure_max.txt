@@ -1,0 +1,146 @@
+project-root/
+├── backend/                 # Серверная часть (FastAPI)
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py          # Точка входа FastAPI (создание приложения, подключение роутов)
+│   │   ├── core/            # Конфигурация, безопасность, общие зависимости
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py    # Pydantic-модель для переменных окружения (BaseSettings)
+│   │   │   ├── security.py  # Хеширование паролей, создание/проверка JWT, OAuth2
+│   │   │   ├── dependencies.py # Общие зависимости (get_db, get_current_user)
+│   │   │   ├── exceptions.py   # Кастомные исключения и обработчики ошибок
+│   │   │   └── logging.py   # Настройка логирования
+│   │   ├── api/             # Маршруты API
+│   │   │   ├── __init__.py
+│   │   │   ├── api_v1/      # Версионирование API
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── endpoints/   # Обработчики конечных точек
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── coffees.py
+│   │   │   │   │   ├── users.py
+│   │   │   │   │   ├── ratings.py
+│   │   │   │   │   ├── reviews.py
+│   │   │   │   │   ├── forums.py      # Обсуждения под постами
+│   │   │   │   │   ├── chats.py       # Общий чат
+│   │   │   │   │   ├── brew_diary.py  # Дневник заварок
+│   │   │   │   │   ├── recommendations.py
+│   │   │   │   │   ├── search.py
+│   │   │   │   │   ├── moderation.py  # Жалобы, модерация
+│   │   │   │   │   ├── ai_fill.py     # Заполнение карточки кофе через ИИ
+│   │   │   │   │   └── ...
+│   │   │   │   └── dependencies.py # Зависимости, специфичные для v1
+│   │   ├── models/          # SQLAlchemy модели (ORM)
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py      # DeclarativeBase
+│   │   │   ├── coffee.py    # Кофе, обжарщики, фермеры, происхождение
+│   │   │   ├── user.py      # Пользователи, профили, соцсети
+│   │   │   ├── rating.py    # Оценки (с поддержкой разных шкал)
+│   │   │   ├── review.py    # Текстовые обзоры
+│   │   │   ├── forum.py     # Посты/обсуждения
+│   │   │   ├── chat.py      # Сообщения общего чата
+│   │   │   ├── brew.py      # Записи дневника заваривания
+│   │   │   ├── moderation.py # Жалобы, статусы модерации
+│   │   │   └── ...
+│   │   ├── schemas/         # Pydantic схемы (сериализация/валидация)
+│   │   │   ├── __init__.py
+│   │   │   ├── coffee.py
+│   │   │   ├── user.py
+│   │   │   ├── rating.py
+│   │   │   ├── review.py
+│   │   │   ├── forum.py
+│   │   │   ├── chat.py
+│   │   │   ├── brew.py
+│   │   │   ├── moderation.py
+│   │   │   └── ...
+│   │   ├── services/        # Бизнес-логика (используется в эндпоинтах)
+│   │   │   ├── __init__.py
+│   │   │   ├── coffee_service.py
+│   │   │   ├── user_service.py
+│   │   │   ├── rating_service.py
+│   │   │   ├── forum_service.py
+│   │   │   ├── chat_service.py
+│   │   │   ├── recommendation_service.py
+│   │   │   ├── ai_service.py        # Интеграция с ИИ (по ссылке)
+│   │   │   ├── moderation_service.py
+│   │   │   └── ...
+│   │   ├── repositories/    # (Опционально) слой доступа к данным, абстрагирующий запросы
+│   │   │   ├── __init__.py
+│   │   │   ├── coffee_repository.py
+│   │   │   ├── user_repository.py
+│   │   │   └── ...
+│   │   ├── db/              # Работа с БД
+│   │   │   ├── __init__.py
+│   │   │   ├── session.py   # Настройка async session, get_db
+│   │   │   ├── base.py      # Базовый класс для моделей (если не вынесен)
+│   │   │   └── init_db.py   # Инициализация (опционально)
+│   │   ├── utils/           # Вспомогательные функции
+│   │   │   ├── __init__.py
+│   │   │   ├── pagination.py
+│   │   │   ├── validators.py
+│   │   │   └── localization.py # Поддержка многоязычности (например, получение перевода для полей)
+│   │   └── alembic/         # Миграции Alembic (создаётся автоматически)
+│   │       ├── versions/
+│   │       ├── env.py
+│   │       └── script.py.mako
+│   ├── tests/               # Тесты backend
+│   │   ├── __init__.py
+│   │   ├── conftest.py
+│   │   ├── test_api/
+│   │   └── test_services/
+│   ├── requirements.txt     # (или pyproject.toml)
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   └── alembic.ini          # Конфиг Alembic
+│
+├── frontend/                # Клиентская часть (Flet)
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py          # Запуск Flet-приложения, инициализация маршрутизации
+│   │   ├── views/           # Страницы (экраны)
+│   │   │   ├── __init__.py
+│   │   │   ├── home.py
+│   │   │   ├── coffee_list.py
+│   │   │   ├── coffee_detail.py
+│   │   │   ├── user_profile.py
+│   │   │   ├── login.py
+│   │   │   ├── register.py
+│   │   │   ├── forum.py
+│   │   │   ├── chat.py
+│   │   │   ├── brew_diary.py
+│   │   │   └── ...
+│   │   ├── components/      # Переиспользуемые виджеты
+│   │   │   ├── __init__.py
+│   │   │   ├── coffee_card.py
+│   │   │   ├── rating_widget.py
+│   │   │   ├── comment.py
+│   │   │   └── ...
+│   │   ├── controllers/     # Управление состоянием (например, классы-хранилища)
+│   │   │   ├── __init__.py
+│   │   │   ├── app_state.py   # Глобальное состояние (текущий пользователь, настройки)
+│   │   │   ├── coffee_state.py
+│   │   │   └── ...
+│   │   ├── services/        # Взаимодействие с API бэкенда
+│   │   │   ├── __init__.py
+│   │   │   ├── api_client.py  # Базовый клиент (aiohttp/httpx)
+│   │   │   ├── coffee_api.py
+│   │   │   ├── user_api.py
+│   │   │   └── ...
+│   │   ├── localization/    # Локализация интерфейса
+│   │   │   ├── __init__.py
+│   │   │   ├── en.py        # Словарь для английского
+│   │   │   ├── ru.py        # Словарь для русского
+│   │   │   └── l10n.py      # Менеджер локализации (функция _())
+│   │   └── utils/           # Утилиты фронтенда
+│   │       ├── __init__.py
+│   │       ├── helpers.py
+│   │       └── validators.py
+│   ├── assets/              # Статические файлы (изображения, шрифты)
+│   ├── tests/               # Тесты фронтенда
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .dockerignore
+│
+├── docker-compose.yml       # Оркестрация сервисов (backend, frontend, postgres, возможно redis)
+├── .env.example             # Пример переменных окружения
+├── .gitignore
+└── README.md

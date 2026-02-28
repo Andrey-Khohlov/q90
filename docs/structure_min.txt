@@ -1,0 +1,10 @@
+app/
+├── main.py              # Запуск приложения, подключение роутеров
+├── database.py          # Настройка движка (Engine) и сессий
+├── models/              # SQLAlchemy модели (Таблицы)
+│   └── coffees.py
+├── schemas/             # Pydantic схемы (Валидация)
+│   └── cooffees.py
+├── routers/             # Эндпоинты (HTTP логика)
+│   └── coffees.py
+└── repository.py        # Логика работы с БД (SQL-запросы)
