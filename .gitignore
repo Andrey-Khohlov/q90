@@ -1,1 +1,49 @@
-backend/.venv
+# Virtual Environments
+.venv/
+**/.venv/
+backend/.venv/
+frontend/.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.python-version
+.pytest_cache/
+.coverage
+.coverage.*
+*.cover
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.log
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+*.code-workspace
+!.vscode/*.code-workspace
+backend/.vscode/
+frontend/.vscode/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env
+.env.local
+.env.*.local
+
+# Docker
+*.pid
+*.sock
