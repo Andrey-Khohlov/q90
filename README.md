@@ -14,3 +14,10 @@ project.code-workspace              # Общие настройки (без ин
 │   └── .vscode/
 │       └── settings.json           # Указывает на frontend/.venv
 └── docs/
+
+# Запуск фронтенда
+из терминала `.venv/bin/python test.py`
+
+(.venv) ...q90/frontend$ .venv/bin/python test.py
+sys.executable='/home/xgb/projects/q90/frontend/.venv/bin/python'
+
