@@ -126,10 +126,10 @@
 | `importer_id` | `BIGINT` | `FOREIGN KEY REFERENCES importers(importer_id)` | Импортёр |
 | `roaster_id` | `BIGINT` | `FOREIGN KEY REFERENCES roasters(roaster_id)` | Обжарщик |
 | `roasting_level` | `VARCHAR(100)` | | Степень обжарки enum|
-| `price` | `DECIMAL(10,2)` | | Цена за кг |
+| `price` | `INTEGER` | | Цена за кг |
 | `weight` | `INTEGER` | | Вес упаковки (г) |
-| `price_250g` | `DECIMAL(10,2)` | | Цена за 250г |
-| `price_1Kg` | `DECIMAL(10,2)` | | Цена за 1кг |
+| `price_250g` | `INTEGER` | | Цена за 250г |
+| `price_1Kg` | `INTEGER` | | Цена за 1кг |
 | `currency` | `CHAR(3)` | | валюта ISO 4217 |
 | `title` | `VARCHAR(300)` | `NOT NULL` | Название |
 | `description` | `TEXT` | | Описание |
@@ -351,14 +351,15 @@
 
 ---
 
-## 📌 ENUM-типы (определения)
+## 📌 ENUM-типы
 
-enum-типы не создаем
+Не используем Enim.
+Не используем DOMAIN.
+Вместо этого используем CheckConstraint в БД.
 
 ## 🎯 Ключевые рекомендации
 
 1. **Все внешние ключи** должны иметь тот же тип, что и PK родительской таблицы.
-2. **Для денег** всегда используйте `DECIMAL`, никогда `FLOAT`/`REAL`.
 3. **Для дат** всегда `TIMESTAMPTZ` (с часовым поясом).
 4. **Счётчики** (`followers`, `marks`) лучше обновлять триггерами, чтобы не рассинхронизироваться.
 5. **В таблице `messages`** добавлен CHECK для гарантии, что сообщение привязано ровно к одной сущности.

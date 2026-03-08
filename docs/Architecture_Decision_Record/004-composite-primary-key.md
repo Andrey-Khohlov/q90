@@ -1,0 +1,5 @@
+# context
+
+# deciesion
+
+# consequences
