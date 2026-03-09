@@ -1,11 +1,4 @@
 SET search_path TO geography, organizations, users, coffee, equipment, social, moderation, public;
-
 SHOW search_path;
 
-
-
-
-INSERT INTO moderation.moderation_statuses VALUES 
-    ('pending'),
-    ('approved'),
-    ('rejected');
+SELECT * FROM moderation_statuses;
