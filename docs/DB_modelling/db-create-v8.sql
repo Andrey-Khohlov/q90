@@ -12,12 +12,11 @@ CREATE SCHEMA IF NOT EXISTS moderation;
 -- =====================================================
 -- Схема: geography
 -- =====================================================
--- реализация паттерна "Single Table Inheritance" или, точнее, иерархической структуры в одной таблице.
 CREATE TABLE geography.locations (
     location_id BIGSERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     location_type VARCHAR(50) NOT NULL, -- 'world_part', 'country', 'region', 'locality', 'city'
-    parent_id BIGINT NOT NULL REFERENCES geography.locations(location_id) DEFERRABLE INITIALLY IMMEDIATE,
+    parent_id BIGINT REFERENCES geography.locations(location_id) DEFERRABLE INITIALLY IMMEDIATE,
     country_code CHAR(2), -- для стран (ISO Alpha-2)
     is_coffee_growing BOOLEAN DEFAULT false, -- для стран
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -28,6 +27,7 @@ CREATE TABLE geography.locations (
 COMMENT ON TABLE geography.locations IS 'Географические объекты (части света, страны, регионы, местности, города)';
 
 CREATE INDEX idx_locations_parent ON geography.locations(parent_id);
+CREATE INDEX idx_locations_type ON geography.locations(location_type);
 CREATE UNIQUE INDEX idx_locations_country_code ON geography.locations(country_code) WHERE location_type = 'country';
 
 -- =====================================================
@@ -38,7 +38,7 @@ CREATE TABLE organizations.organizations (
     org_name VARCHAR(200) NOT NULL,
     internet_site VARCHAR(500),
     about TEXT,
-    location_id BIGINT NOT NULL REFERENCES geography.locations(location_id) DEFERRABLE INITIALLY IMMEDIATE,
+    location_id BIGINT REFERENCES geography.locations(location_id) DEFERRABLE INITIALLY IMMEDIATE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     deleted_at TIMESTAMPTZ
@@ -93,7 +93,7 @@ COMMENT ON TABLE organizations.roaster_details IS 'Детальная инфор
 -- =====================================================
 CREATE TABLE users.users (
     user_id BIGSERIAL PRIMARY KEY,
-    location_id BIGINT NOT NULL REFERENCES geography.locations(location_id) DEFERRABLE INITIALLY IMMEDIATE,
+    location_id BIGINT REFERENCES geography.locations(location_id) DEFERRABLE INITIALLY IMMEDIATE,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255),

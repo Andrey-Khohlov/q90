@@ -35,6 +35,8 @@ q90
 │   │   ├── user_stories.md
 │   │   └── vision.md
 │   ├── DB_modelling
+│   │   ├── queries
+│   │   │   └── ...
 │   │   ├── db_attr_types.md
 │   │   ├── db-create.sql
 │   │   ├── db-domain-description.md
