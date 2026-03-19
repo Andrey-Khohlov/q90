@@ -137,7 +137,7 @@ CREATE INDEX idx_user_roles_role ON users.user_roles(role_name);
 CREATE TABLE coffee.varieties (
     variety_id SERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
+    created_by BIGINT NOT NULL REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     variety VARCHAR(100) UNIQUE NOT NULL,
     species VARCHAR(100) NOT NULL,
     taste_description TEXT,
@@ -145,21 +145,23 @@ CREATE TABLE coffee.varieties (
     origin_type VARCHAR(20) NOT NULL,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    deleted_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE
 );
 
 COMMENT ON TABLE coffee.varieties IS 'Сорта кофе';
 
 CREATE TABLE coffee.variety_parents (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
+    created_by BIGINT NOT NULL REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     variety_id INTEGER NOT NULL REFERENCES coffee.varieties(variety_id) DEFERRABLE INITIALLY IMMEDIATE,
     parent_id INTEGER NOT NULL REFERENCES coffee.varieties(variety_id) DEFERRABLE INITIALLY IMMEDIATE,
-    parent_role VARCHAR(20),
+    parent_role VARCHAR(20) NOT NULL,
     notes TEXT,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     deleted_at TIMESTAMPTZ,
+    deleted_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     PRIMARY KEY (variety_id, parent_id)
 );
 
@@ -170,18 +172,19 @@ CREATE INDEX ON coffee.variety_parents (parent_id);
 CREATE TABLE coffee.green_beans (
     beans_id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
+    created_by BIGINT NOT NULL REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     farm_id BIGINT REFERENCES organizations.organizations(org_id) DEFERRABLE INITIALLY IMMEDIATE,
     variety_id INTEGER REFERENCES coffee.varieties(variety_id) DEFERRABLE INITIALLY IMMEDIATE,
     mix BOOLEAN DEFAULT false,
-    process VARCHAR(100),
+    process VARCHAR(100) NOT NULL,
     height_min SMALLINT,
     height_max SMALLINT,
     description TEXT,
     followers INTEGER DEFAULT 0,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    deleted_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE
 );
 
 COMMENT ON TABLE coffee.green_beans IS 'Партии зеленого зерна';
@@ -192,17 +195,17 @@ CREATE INDEX idx_green_beans_variety ON coffee.green_beans(variety_id);
 CREATE TABLE coffee.coffees (
     coffee_id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
-    green_bean_id BIGINT REFERENCES coffee.green_beans(beans_id) DEFERRABLE INITIALLY IMMEDIATE,
-    crop_year SMALLINT,
-    crop_month SMALLINT CHECK (crop_month BETWEEN 1 AND 12),
+    created_by BIGINT NOT NULL REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
+    green_bean_id BIGINT NOT NULL REFERENCES coffee.green_beans(beans_id) DEFERRABLE INITIALLY IMMEDIATE,
+    crop_year SMALLINT NOT NULL,
+    crop_month SMALLINT NOT NULL CHECK (crop_month BETWEEN 1 AND 12),
     exporter_id BIGINT REFERENCES organizations.organizations(org_id) DEFERRABLE INITIALLY IMMEDIATE,
     importer_id BIGINT REFERENCES organizations.organizations(org_id) DEFERRABLE INITIALLY IMMEDIATE,
-    roaster_id BIGINT REFERENCES organizations.organizations(org_id) DEFERRABLE INITIALLY IMMEDIATE,
-    roasting_level VARCHAR(100),
+    roaster_id BIGINT NOT NULL REFERENCES organizations.organizations(org_id) DEFERRABLE INITIALLY IMMEDIATE,
+    roasting_level VARCHAR(100) NOT NULL,
     price INTEGER,
     weight INTEGER,
-    currency CHAR(3),
+    currency CHAR(3) NOT NULL,
     title VARCHAR(300) NOT NULL,
     description TEXT,
     q_grade DECIMAL(3,1),
@@ -212,6 +215,7 @@ CREATE TABLE coffee.coffees (
     updated_at TIMESTAMPTZ,
     updated_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     deleted_at TIMESTAMPTZ,
+    deleted_by BIGINT REFERENCES users.users(user_id) DEFERRABLE INITIALLY IMMEDIATE,
     avg_rating DECIMAL(3,2),
     ratings_count INTEGER DEFAULT 0,
     reviews_count INTEGER DEFAULT 0,

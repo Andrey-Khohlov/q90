@@ -8,6 +8,7 @@
 - Containerization: Docker & Docker Compose
 - Migration: Alembic
 - Asynchronous Processing: asyncio
+- AI parsing coffee data from internet sites of coffee roasters
 
 # Цели:
 - получение независимой экспертной оценкти сообщества для обжареного кофе

@@ -47,3 +47,6 @@ Thumbs.db
 # Docker
 *.pid
 *.sock
+
+# data
+docs/DB_modelling/geo_data/
