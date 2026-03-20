@@ -1,22 +1,37 @@
+import json
 import os
+from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field
+import logging
 
+from app.parsers.schemas import CoffeeInfo, RawCoffeeData
 from app.core.config import settings
+from app.core import logging_config
+
+logger = logging.getLogger(__name__)
 
 
-# Определяем схему данных с помощью Pydantic
-class CoffeeInfo(BaseModel):
-    weight: str = Field(description="weight of the package, e.g., '250g', '1lb'")
-    price: str = Field(description="price, e.g., '$15.99'")
-    country_of_origin: str = Field(description="country where coffee was grown")
-    variety: str = Field(description="coffee variety, e.g., 'Arabica', 'Robusta'")
-    farmer_name: str = Field(description="name of the farmer or farm")
-    farm_address: str = Field(description="address of the farm")
+def append_json_record(record: dict, file_path: Path | str) -> None:
+    file_path = Path(file_path)
+    if file_path.exists():
+        with open(file_path, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = {}
+    else:
+        data = {}
+
+    if "coffees" not in data:
+        data["coffees"] = []
+    data["coffees"].append(record)
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 # Функция для загрузки и очистки HTML страницы
@@ -39,7 +54,7 @@ def fetch_page_text(url: str) -> str:
 
 
 # Создаём парсер Pydantic
-parser = PydanticOutputParser(pydantic_object=CoffeeInfo)
+parser = PydanticOutputParser(pydantic_object=RawCoffeeData)
 
 # Промпт для модели
 prompt = ChatPromptTemplate.from_messages(
@@ -54,28 +69,27 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-# Инициализация модели Mistral
-# Можно указать конкретную модель, например "mistral-large-latest"
+
 model = ChatMistralAI(
     name="mistral-large-latest",
-    temperature=0,  # для детерминированного вывода
-    api_key=settings.api_key_mistral,  # или передать напрямую
+    temperature=0,
+    api_key=settings.api_key_mistral,
 )
 
 # Строим цепочку
 chain = prompt | model | parser
 
 # URL целевой страницы
-url = "https://shop.tastycoffee.ru/coffee/rwanda-rugali-anaerobic"
+url = "https://www.torrefacto.ru/catalog/roasted/costa-rica-torrefacto-geisha/"
 
 if __name__ == "__main__":
 
     # Получаем текст страницы
     try:
         page_text = fetch_page_text(url)
-        print("Страница загружена, длина текста:", len(page_text))
+        logger.debug(f"Страница загружена, длина текста: {len(page_text)}")
     except Exception as e:
-        print(f"Ошибка при загрузке страницы: {e}")
+        logger.error(f"Ошибка при загрузке страницы: {e}")
         exit(1)
 
     # Вызываем цепочку
@@ -87,7 +101,12 @@ if __name__ == "__main__":
             }
         )
         # result — это объект CoffeeInfo
+        data = result.model_dump()
+        data["coffee_url"] = url
+        json_str = json.dumps(data, indent=2, default=str, ensure_ascii=False)
         print("\nИзвлечённые данные:")
-        print(result.model_dump_json(indent=2))  # или result.dict()
+        print(json_str)
+        append_json_record(data, Path("app/parsers/parsed_coffees.json"))
+
     except Exception as e:
-        print(f"Ошибка при обработке моделью: {e}")
+        logger.exception(f"Ошибка при обработке моделью: {e}")

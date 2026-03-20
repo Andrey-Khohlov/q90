@@ -15,16 +15,16 @@ logger.debug(f'File exists: {(BASE_DIR / ".env").exists()}')
 
 
 class Settings(BaseSettings):
-    DB_HOST: str
-    DB_PORT: int
-    DB_USER: str
-    DB_PASS: str
-    DB_NAME: str
-    api_key_mistral: SecretStr
-    OAUTH_GOOGLE_CLIENT_SECRET: str
-    OAUTH_GOOGLE_CLIENT_ID: str
-    OAUTH_GITHUB_CLIENT_SECRET: str
-    OAUTH_GITHUB_CLIENT_ID: str
+    DB_HOST: str = "local"
+    DB_PORT: int = 5432
+    DB_USER: str = "postgres"
+    DB_PASS: str = "pass"
+    DB_NAME: str = "postgres"
+    api_key_mistral: SecretStr = SecretStr("passw")
+    OAUTH_GOOGLE_CLIENT_SECRET: str = ""
+    OAUTH_GOOGLE_CLIENT_ID: str = ""
+    OAUTH_GITHUB_CLIENT_SECRET: str = ""
+    OAUTH_GITHUB_CLIENT_ID: str = ""
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(

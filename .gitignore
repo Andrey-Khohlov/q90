@@ -50,3 +50,5 @@ Thumbs.db
 
 # data
 docs/DB_modelling/geo_data/
+backend/app/parsers/output.json
+backend/app/parsers/parsed_coffees.json
