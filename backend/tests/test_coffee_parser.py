@@ -1,33 +1,41 @@
 """Tests for app/parsers/coffee_parser.py module."""
 
 import json
-import os
-import sys
+import asyncio
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 import pytest
+import httpx
 from bs4 import BeautifulSoup
 
 # Mock settings before importing the coffee_parser module
 # This prevents issues with missing environment variables during testing
+import sys
 sys.modules["app.core.config"] = MagicMock()
 from app.core.config import settings
 
 settings.api_key_mistral = "test_api_key"
 
-from app.parsers.coffee_parser import append_json_record, fetch_page_text
+from app.parsers.coffee_parser import (
+    append_json_record_async,
+    fetch_page_text_async,
+    parser,
+    prompt,
+    chain,
+)
 
 
-class TestAppendJsonRecord:
-    """Tests for the append_json_record function."""
+class TestAppendJsonRecordAsync:
+    """Tests for the append_json_record_async function."""
 
-    def test_append_to_new_file(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_to_new_file(self, tmp_path: Path) -> None:
         """Test appending a record to a new file."""
         file_path = tmp_path / "test.json"
         record = {"name": "Coffee 1", "price": "100"}
 
-        append_json_record(record, file_path)
+        await append_json_record_async(record, file_path)
 
         assert file_path.exists()
         with open(file_path, "r", encoding="utf-8") as f:
@@ -37,7 +45,8 @@ class TestAppendJsonRecord:
         assert len(data["coffees"]) == 1
         assert data["coffees"][0] == record
 
-    def test_append_to_existing_file(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_to_existing_file(self, tmp_path: Path) -> None:
         """Test appending a record to an existing file."""
         file_path = tmp_path / "test.json"
         initial_data = {"coffees": [{"name": "Coffee 1"}]}
@@ -46,7 +55,7 @@ class TestAppendJsonRecord:
             json.dump(initial_data, f, ensure_ascii=False)
 
         record = {"name": "Coffee 2", "price": "200"}
-        append_json_record(record, file_path)
+        await append_json_record_async(record, file_path)
 
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -55,7 +64,8 @@ class TestAppendJsonRecord:
         assert data["coffees"][0] == {"name": "Coffee 1"}
         assert data["coffees"][1] == record
 
-    def test_append_to_file_without_coffees_key(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_to_file_without_coffees_key(self, tmp_path: Path) -> None:
         """Test appending to a file that doesn't have 'coffees' key."""
         file_path = tmp_path / "test.json"
         initial_data = {"other_key": "value"}
@@ -64,7 +74,7 @@ class TestAppendJsonRecord:
             json.dump(initial_data, f, ensure_ascii=False)
 
         record = {"name": "Coffee 1"}
-        append_json_record(record, file_path)
+        await append_json_record_async(record, file_path)
 
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -74,7 +84,8 @@ class TestAppendJsonRecord:
         assert len(data["coffees"]) == 1
         assert data["coffees"][0] == record
 
-    def test_append_to_invalid_json_file(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_to_invalid_json_file(self, tmp_path: Path) -> None:
         """Test appending to a file with invalid JSON content."""
         file_path = tmp_path / "test.json"
 
@@ -82,7 +93,7 @@ class TestAppendJsonRecord:
             f.write("invalid json content")
 
         record = {"name": "Coffee 1"}
-        append_json_record(record, file_path)
+        await append_json_record_async(record, file_path)
 
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -91,12 +102,13 @@ class TestAppendJsonRecord:
         assert len(data["coffees"]) == 1
         assert data["coffees"][0] == record
 
-    def test_append_with_string_path(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_with_string_path(self, tmp_path: Path) -> None:
         """Test appending with a string path instead of Path object."""
         file_path = str(tmp_path / "test.json")
         record = {"name": "Coffee 1"}
 
-        append_json_record(record, file_path)
+        await append_json_record_async(record, file_path)
 
         assert Path(file_path).exists()
         with open(file_path, "r", encoding="utf-8") as f:
@@ -104,13 +116,14 @@ class TestAppendJsonRecord:
 
         assert len(data["coffees"]) == 1
 
-    def test_append_multiple_records(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_multiple_records(self, tmp_path: Path) -> None:
         """Test appending multiple records sequentially."""
         file_path = tmp_path / "test.json"
 
         for i in range(3):
             record = {"name": f"Coffee {i}", "price": str(i * 100)}
-            append_json_record(record, file_path)
+            await append_json_record_async(record, file_path)
 
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -119,12 +132,13 @@ class TestAppendJsonRecord:
         for i in range(3):
             assert data["coffees"][i]["name"] == f"Coffee {i}"
 
-    def test_append_with_unicode_content(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_with_unicode_content(self, tmp_path: Path) -> None:
         """Test appending records with unicode content."""
         file_path = tmp_path / "test.json"
         record = {"name": "Кофе с горы", "description": "Вкусный кофе с ароматом ягод"}
 
-        append_json_record(record, file_path)
+        await append_json_record_async(record, file_path)
 
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -133,11 +147,12 @@ class TestAppendJsonRecord:
         assert data["coffees"][0]["description"] == "Вкусный кофе с ароматом ягод"
 
 
-class TestFetchPageText:
-    """Tests for the fetch_page_text function."""
+class TestFetchPageTextAsync:
+    """Tests for the fetch_page_text_async function."""
 
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_success(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_success(self, mock_client_class: Mock) -> None:
         """Test successful page fetching."""
         html_content = """
         <html>
@@ -148,21 +163,31 @@ class TestFetchPageText:
             </body>
         </html>
         """
-        mock_response = Mock()
+        mock_response = AsyncMock()
         mock_response.text = html_content
         mock_response.raise_for_status = Mock()
-        mock_get.return_value = mock_response
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        result = fetch_page_text("https://example.com/coffee")
+        result = await fetch_page_text_async("https://example.com/coffee")
 
         assert "Coffee Title" in result
         assert "Description of the coffee" in result
-        mock_get.assert_called_once()
-        headers = mock_get.call_args[1]["headers"]
-        assert "User-Agent" in headers
+        mock_client.get.assert_called_once()
+        call_kwargs = mock_client.get.call_args[1]
+        assert "headers" in call_kwargs
+        assert "User-Agent" in call_kwargs["headers"]
+        assert call_kwargs["timeout"] == 10.0
 
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_removes_scripts_and_styles(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_removes_scripts_and_styles(
+        self, mock_client_class: Mock
+    ) -> None:
         """Test that scripts and styles are removed from the page content."""
         html_content = """
         <html>
@@ -176,20 +201,28 @@ class TestFetchPageText:
             </body>
         </html>
         """
-        mock_response = Mock()
+        mock_response = AsyncMock()
         mock_response.text = html_content
         mock_response.raise_for_status = Mock()
-        mock_get.return_value = mock_response
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        result = fetch_page_text("https://example.com/coffee")
+        result = await fetch_page_text_async("https://example.com/coffee")
 
         assert "alert" not in result
         assert ".hidden" not in result
         assert "display: none" not in result
         assert "Visible content" in result
 
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_removes_empty_lines(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_removes_empty_lines(
+        self, mock_client_class: Mock
+    ) -> None:
         """Test that empty lines are removed from the result."""
         html_content = """
         <html>
@@ -200,74 +233,110 @@ class TestFetchPageText:
             </body>
         </html>
         """
-        mock_response = Mock()
+        mock_response = AsyncMock()
         mock_response.text = html_content
         mock_response.raise_for_status = Mock()
-        mock_get.return_value = mock_response
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        result = fetch_page_text("https://example.com/coffee")
+        result = await fetch_page_text_async("https://example.com/coffee")
 
         lines = result.split("\n")
         assert all(line.strip() for line in lines)
         assert "Line 1" in result
         assert "Line 2" in result
 
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_with_custom_headers(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_with_custom_headers(
+        self, mock_client_class: Mock
+    ) -> None:
         """Test that custom User-Agent header is used."""
-        mock_response = Mock()
+        mock_response = AsyncMock()
         mock_response.text = "<html><body>Test</body></html>"
         mock_response.raise_for_status = Mock()
-        mock_get.return_value = mock_response
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        fetch_page_text("https://example.com/coffee")
+        await fetch_page_text_async("https://example.com/coffee")
 
-        call_kwargs = mock_get.call_args[1]
+        call_kwargs = mock_client.get.call_args[1]
         assert "headers" in call_kwargs
         assert "Mozilla/5.0" in call_kwargs["headers"]["User-Agent"]
-        assert call_kwargs["timeout"] == 10
+        assert call_kwargs["timeout"] == 10.0
 
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_http_error(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_http_error(self, mock_client_class: Mock) -> None:
         """Test handling of HTTP errors."""
-        import requests
+        mock_response = AsyncMock()
+        mock_response.raise_for_status = Mock(side_effect=httpx.HTTPError("404 Not Found"))
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        mock_get.side_effect = requests.exceptions.HTTPError("404 Not Found")
+        with pytest.raises(httpx.HTTPError):
+            await fetch_page_text_async("https://example.com/nonexistent")
 
-        with pytest.raises(requests.exceptions.HTTPError):
-            fetch_page_text("https://example.com/nonexistent")
-
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_timeout(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_timeout(self, mock_client_class: Mock) -> None:
         """Test handling of timeout errors."""
-        import requests
+        mock_response = AsyncMock()
+        mock_response.raise_for_status = Mock(side_effect=httpx.TimeoutException("Request timed out"))
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        mock_get.side_effect = requests.exceptions.Timeout("Request timed out")
+        with pytest.raises(httpx.TimeoutException):
+            await fetch_page_text_async("https://example.com/slow")
 
-        with pytest.raises(requests.exceptions.Timeout):
-            fetch_page_text("https://example.com/slow")
-
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_connection_error(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_connection_error(
+        self, mock_client_class: Mock
+    ) -> None:
         """Test handling of connection errors."""
-        import requests
+        mock_response = AsyncMock()
+        mock_response.raise_for_status = Mock(side_effect=httpx.ConnectError("Connection failed"))
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        mock_get.side_effect = requests.exceptions.ConnectionError("Connection failed")
+        with pytest.raises(httpx.ConnectError):
+            await fetch_page_text_async("https://example.com/unreachable")
 
-        with pytest.raises(requests.exceptions.ConnectionError):
-            fetch_page_text("https://example.com/unreachable")
-
-    @patch("app.parsers.coffee_parser.requests.get")
-    def test_fetch_page_text_complex_html(self, mock_get: Mock) -> None:
+    @pytest.mark.asyncio
+    @patch("app.parsers.coffee_parser.httpx.AsyncClient")
+    async def test_fetch_page_text_complex_html(
+        self, mock_client_class: Mock
+    ) -> None:
         """Test fetching with complex HTML structure."""
         html_content = """
         <html>
             <head><title>Costa Rica Torrefacto Geisha</title></head>
             <body>
                 <div class="breadcrumbs">
-                    <a href="/">Home</a> / 
-                    <a href="/catalog">Catalog</a> / 
-                    <a href="/catalog/roasted">Roasted</a> / 
+                    <a href="/">Home</a> /
+                    <a href="/catalog">Catalog</a> /
+                    <a href="/catalog/roasted">Roasted</a> /
                     Costa Rica Torrefacto Geisha
                 </div>
                 <h1 class="product-title">Costa Rica Torrefacto Geisha</h1>
@@ -284,12 +353,17 @@ class TestFetchPageText:
             </body>
         </html>
         """
-        mock_response = Mock()
+        mock_response = AsyncMock()
         mock_response.text = html_content
         mock_response.raise_for_status = Mock()
-        mock_get.return_value = mock_response
+        
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client_class.return_value = mock_client
 
-        result = fetch_page_text("https://www.torrefacto.ru/catalog/roasted/costa-rica")
+        result = await fetch_page_text_async("https://www.torrefacto.ru/catalog/roasted/costa-rica")
 
         assert "Costa Rica" in result
         assert "Тропических фруктов" in result or "тропических фруктов" in result
@@ -300,18 +374,18 @@ class TestFetchPageText:
 class TestCoffeeParserIntegration:
     """Integration tests for the coffee parser chain."""
 
+    @pytest.mark.asyncio
     @patch("app.parsers.coffee_parser.chain")
-    @patch("app.parsers.coffee_parser.fetch_page_text")
-    def test_full_parsing_flow(
-        self, mock_fetch: Mock, mock_chain: Mock, tmp_path: Path
+    @patch("app.parsers.coffee_parser.fetch_page_text_async")
+    async def test_full_parsing_flow(
+        self, mock_fetch: AsyncMock, mock_chain: Mock, tmp_path: Path
     ) -> None:
         """Test the complete parsing flow (with mocked LLM)."""
-        from app.parsers.coffee_parser import parser
         from app.parsers.schemas import RawCoffeeData
 
         mock_fetch.return_value = "Test coffee page content"
 
-        # Mock the chain invoke to return a RawCoffeeData object
+        # Mock the chain ainvoke to return a RawCoffeeData object
         mock_result = RawCoffeeData.model_construct(
             title="Test Coffee",
             description="Delicious coffee",
@@ -324,9 +398,9 @@ class TestCoffeeParserIntegration:
             crop_month_text="January",
             species="Arabica",
         )
-        mock_chain.invoke.return_value = mock_result
+        mock_chain.ainvoke = AsyncMock(return_value=mock_result)
 
-        result = mock_chain.invoke(
+        result = await mock_chain.ainvoke(
             {
                 "page_content": "Test coffee page content",
                 "format_instructions": parser.get_format_instructions(),
@@ -339,16 +413,12 @@ class TestCoffeeParserIntegration:
 
     def test_parser_format_instructions(self) -> None:
         """Test that the parser provides format instructions."""
-        from app.parsers.coffee_parser import parser
-
         instructions = parser.get_format_instructions()
         assert instructions is not None
         assert len(instructions) > 0
 
     def test_prompt_template_structure(self) -> None:
         """Test that the prompt template has the correct structure."""
-        from app.parsers.coffee_parser import prompt
-
         assert prompt is not None
         messages = prompt.messages
         assert len(messages) == 2
