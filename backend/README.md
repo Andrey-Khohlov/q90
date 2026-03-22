@@ -1,3 +1,6 @@
+# tests
+python -m pytest -v
+
 # Закройте все окна VS Code
 killall code 2>/dev/null
 
